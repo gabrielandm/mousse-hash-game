@@ -1,0 +1,142 @@
+<html lang="en">
+
+<head>
+   <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+   <title>Index</title>
+   <link rel="stylesheet" href="http://localhost:3333/styles.css">
+</head>
+
+<body>
+   <div class="game-holder">
+      <div class="hash-row">
+         <div onClick="MarcarCelula(0, 0)" id="div0" class="hash-column"></div>
+         <div onClick="MarcarCelula(1, 0)" id="div1" class="hash-column"></div>
+         <div onClick="MarcarCelula(2, 0)" id="div2" class="hash-column"></div>
+      </div>
+   
+      <div class="hash-row">
+         <div onClick="MarcarCelula(0, 1)" id="div3" class="hash-column"></div>
+         <div onClick="MarcarCelula(1, 1)" id="div4" class="hash-column"></div>
+         <div onClick="MarcarCelula(2, 1)" id="div5" class="hash-column"></div>
+      </div>
+   
+      <div class="hash-row">
+         <div onClick="MarcarCelula(0, 2)" id="div6" class="hash-column"></div>
+         <div onClick="MarcarCelula(1, 2)" id="div7" class="hash-column"></div>
+         <div onClick="MarcarCelula(2, 2)" id="div8" class="hash-column"></div>
+      </div>
+
+      <button onClick="ResetarJogo()" class="reset-button">Reset</button>
+   </div>
+
+   <script type="text/javascript" charset="utf-8">
+      let activeMem = [false, false, false,
+                       false, false, false,
+                       false, false, false
+                      ];
+      let turn = "mingal" // mingal or UwU
+
+      function MarcarCelula(i, j) { // Will call the BE to update and update this page
+         if(activeMem[i + (j * 3)] === false) {
+            // Calling back end to update for everyone
+            xmlhttp = new XMLHttpRequest();
+            xmlhttp.open('GET', `/MarcarCelula?i=${i}&j=${j}`, true);
+            xmlhttp.onreadystatechange = function () {
+               if(xmlhttp.readyState == 4 && xmlhttp.status == 204) {
+                  // Updating locally
+                  activeMem[i + (j * 3)] = true;
+
+                  if(turn === "mingal") {
+                     const item = document.getElementById(`div${i + (j * 3)}`);
+                     item.classList.add("hash-column-active-cat");
+                     item.classList.remove("hash-column");
+
+                     turn = "uwu";
+                  } else if(turn === "uwu") {
+                     const item = document.getElementById(`div${i + (j * 3)}`);
+                     item.classList.add("hash-column-active-uwu");
+                     item.classList.remove("hash-column");
+
+                     turn = "mingal";
+                  }
+               }
+            }
+            xmlhttp.send();
+         }
+      }
+
+      function ResetarJogo() { // Will call the BE to clear all div's and update this page
+         for(let i = 0; i < activeMem.length; i++) {
+            // Calling back end to reset game for everyone
+            xmlhttp = new XMLHttpRequest();
+            xmlhttp.open('GET', `/ResetarJogo`, true);
+            xmlhttp.onreadystatechange = function () {
+               if(xmlhttp.readyState == 4 && xmlhttp.status == 204) {
+                  // Updating locally
+                  activeMem[i] = false;
+                  const item = document.getElementById(`div${i}`);
+                  item.classList.remove("hash-column-active-cat");
+                  item.classList.remove("hash-column-active-uwu");
+                  item.classList.add("hash-column");
+               }
+            }
+            xmlhttp.send();
+         }
+      }
+
+      function LerTabuleiro() { // Every second this is going to be called to update the div's
+         xmlhttp = new XMLHttpRequest();
+         xmlhttp.open('GET', `/LerTabuleiro`, true);
+         xmlhttp.onreadystatechange = function () {
+            if(xmlhttp.readyState == 4 && xmlhttp.status == 200)
+               updatedMem = xmlhttp.responseText.split(" ");
+               let falseCount = 0;
+
+               for(let i = 0; i < activeMem.length; i++) {
+                  if(updatedMem[i] === "true")
+                     updatedMem[i] = true;
+                  else if(updatedMem[i] === "false") {
+                     updatedMem[i] = false;
+                     falseCount++;
+                  }
+
+                  if(updatedMem[i] != activeMem[i]) {
+                     if (updatedMem[i] === true) {
+                        activeMem[i] = true;
+
+                        if(turn === "mingal") {
+                           const item = document.getElementById(`div${i}`);
+                           item.classList.add("hash-column-active-cat");
+                           item.classList.remove("hash-column");
+
+                           turn = "uwu";
+                        } else if(turn === "uwu") {
+                           const item = document.getElementById(`div${i}`);
+                           item.classList.add("hash-column-active-uwu");
+                           item.classList.remove("hash-column");
+
+                           turn = "mingal";
+                        }
+                     }
+                  }
+               }
+
+               if(falseCount === 9) {
+                  for(let i = 0; i < activeMem.length; i++) {
+                     activeMem[i] = false;
+
+                     const item = document.getElementById(`div${i}`);
+                     item.classList.add("hash-column");
+                     item.classList.remove("hash-column-active-uwu");
+                     item.classList.remove("hash-column-active-cat");
+                  }
+                  turn = "mingal";
+               }
+         }
+         xmlhttp.send();
+      }
+      setInterval(LerTabuleiro, 1000);
+   </script>
+</body>
+
+</html>
